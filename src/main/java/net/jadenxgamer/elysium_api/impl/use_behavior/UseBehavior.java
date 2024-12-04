@@ -4,14 +4,14 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.RegistryCodecs;
-import net.minecraft.core.particles.ParticleType;
-import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
+
+import java.util.Optional;
 
 public record UseBehavior(HolderSet<Block> blocks, HolderSet<Item> itemCondition, int chanceToFail, Behavior behavior) {
     public static final Codec<UseBehavior> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -23,7 +23,7 @@ public record UseBehavior(HolderSet<Block> blocks, HolderSet<Item> itemCondition
 
     public record Behavior(UseBehaviorTypeEnum type, ResourceLocation place, PosEnum pos, int posOffset,
                            AfterUseItemEnum afterUseItem, boolean canReplace,
-                           Sounds sounds, Particles particles) {
+                           Optional<Sounds> sounds, Optional<Particles> particles) {
         public static final Codec<Behavior> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 UseBehaviorTypeEnum.CODEC.optionalFieldOf("type", UseBehaviorTypeEnum.PLACE).forGetter(Behavior::type),
                 ResourceLocation.CODEC.optionalFieldOf("place", new ResourceLocation("minecraft", "stone")).forGetter(Behavior::place),
@@ -31,8 +31,8 @@ public record UseBehavior(HolderSet<Block> blocks, HolderSet<Item> itemCondition
                 Codec.INT.optionalFieldOf("pos_offset", 0).forGetter(Behavior::posOffset),
                 AfterUseItemEnum.CODEC.optionalFieldOf("after_use_item", AfterUseItemEnum.NOTHING).forGetter(Behavior::afterUseItem),
                 Codec.BOOL.optionalFieldOf("can_replace_solids", false).forGetter(Behavior::canReplace),
-                Sounds.CODEC.fieldOf("sounds").forGetter(Behavior::sounds),
-                Particles.CODEC.fieldOf("particles").forGetter(Behavior::particles)
+                Sounds.CODEC.optionalFieldOf("sounds").forGetter(Behavior::sounds),
+                Particles.CODEC.optionalFieldOf("particles").forGetter(Behavior::particles)
         ).apply(instance, Behavior::new));
     }
 

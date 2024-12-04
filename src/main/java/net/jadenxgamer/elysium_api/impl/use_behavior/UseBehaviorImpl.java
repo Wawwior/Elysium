@@ -36,9 +36,12 @@ public class UseBehaviorImpl {
         Player player = event.getEntity();
         ItemStack stack = player.getItemInHand(event.getHand());
 
-
         Optional<UseBehavior> useBehavior = Elysium.registryAccess.registryOrThrow(ElysiumRegistries.BLOCK_USE_BEHAVIORS).stream()
                 .filter(s -> s.blocks().contains(state.getBlockHolder()) && s.itemCondition().contains(stack.getItemHolder())).findFirst();
+
+        if (level.isClientSide()) {
+            return;
+        }
 
         if (useBehavior.isEmpty()) {
             // returns if no registry was found
@@ -56,24 +59,28 @@ public class UseBehaviorImpl {
             handleItemAfterUse(registry.behavior().afterUseItem(), stack, event);
         }
 
-//        int chanceToFail = registry.chanceToFail();
-//        if (level.random.nextInt(chanceToFail) != 0) {
-//            return;
-//        }
+        int chanceToFail = registry.chanceToFail();
+        if (chanceToFail > 0) {
+            if (level.random.nextInt(chanceToFail) != 0) {
+                event.setCancellationResult(InteractionResult.SUCCESS);
+                event.setCanceled(true);
+                return;
+            }
+        }
 
         switch (registry.behavior().type()) {
             case PLACE -> placeBlock(level, pos, registry.behavior().place(), event);
             case PLACE_ITSELF -> placeBlock(level, pos, ForgeRegistries.BLOCKS.getKey(state.getBlock()), event);
-            case DROP -> dropStack(level, pos, event.getFace(), registry.behavior().place());
-            case DROP_ITSELF -> dropStack(level, pos, event.getFace(), ForgeRegistries.BLOCKS.getKey(state.getBlock()));
+            case DROP -> dropStack(level, pos, event.getFace(), state.getBlock(), registry.behavior().place());
+            case DROP_ITSELF -> dropStack(level, pos, event.getFace(), state.getBlock(), ForgeRegistries.BLOCKS.getKey(state.getBlock()));
             case FEATURE -> placeFeature(level, pos, registry.behavior().place());
         }
 
-        if (registry.behavior().sounds() != null) {
-            level.playSound(null, event.getPos(), registry.behavior().sounds().soundEvent(), SoundSource.BLOCKS, registry.behavior().sounds().volume(), registry.behavior().sounds().pitch());
+        if (registry.behavior().sounds().isPresent()) {
+            level.playSound(null, event.getPos(), registry.behavior().sounds().get().soundEvent(), SoundSource.BLOCKS, registry.behavior().sounds().get().volume(), registry.behavior().sounds().get().pitch());
         }
-        if (registry.behavior().particles() != null) {
-            spawnParticles(level, pos, registry.behavior().particles().particleType(), registry.behavior().particles().xv(), registry.behavior().particles().yv(), registry.behavior().particles().zv());
+        if (registry.behavior().particles().isPresent()) {
+            spawnParticles(level, pos, registry.behavior().particles().get().particleType(), registry.behavior().particles().get().xv(), registry.behavior().particles().get().yv(), registry.behavior().particles().get().zv());
         }
 
         event.setCancellationResult(InteractionResult.SUCCESS);
@@ -87,10 +94,10 @@ public class UseBehaviorImpl {
         }
     }
 
-    private static void dropStack(Level level, BlockPos pos, Direction direction, ResourceLocation location) {
+    private static void dropStack(Level level, BlockPos pos, Direction direction, Block block, ResourceLocation location) {
         Item item = ForgeRegistries.ITEMS.getValue(location);
         if (item != null) {
-            Block.popResourceFromFace(level, pos, direction, new ItemStack(item));
+            block.popResourceFromFace(level, pos, direction, new ItemStack(item));
         }
     }
 
