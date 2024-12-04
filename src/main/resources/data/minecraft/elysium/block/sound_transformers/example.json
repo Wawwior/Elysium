@@ -1,7 +1,6 @@
 {
   "blocks": [
-    "minecraft:barrier",
-    "minecraft:bedrock"
+    "minecraft:barrier"
   ],
   "break_sound": "minecraft:block.lodestone.break",
   "step_sound": "minecraft:block.lodestone.step",

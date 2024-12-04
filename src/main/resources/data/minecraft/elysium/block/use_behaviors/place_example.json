@@ -1,0 +1,22 @@
+{
+  "blocks": "minecraft:deepslate",
+  "item_condition": "#minecraft:pickaxes",
+  "chance_to_fail": 0,
+  "behaviors": {
+    "type": "place",
+    "place": "minecraft:cobbled_deepslate",
+    "after_use_item": "damage",
+    "can_replace_solids": true,
+    "particles": {
+      "particle_type": "minecraft:crit",
+      "x_velocity": 0.0,
+      "y_velocity": 0.0,
+      "z_velocity": 0.0
+    },
+    "sounds": {
+      "sound_event": "block.deepslate.break",
+      "volume": 1.0,
+      "pitch": 1.0
+    }
+  }
+}
