@@ -1,6 +1,7 @@
 package net.jadenxgamer.elysium_api.impl.use_behavior;
 
 import net.jadenxgamer.elysium_api.Elysium;
+import net.jadenxgamer.elysium_api.api.util.ResourceKeyRegistryHelper;
 import net.jadenxgamer.elysium_api.impl.ElysiumRegistries;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -59,6 +60,13 @@ public class UseBehaviorImpl {
             handleItemAfterUse(registry.behavior().afterUseItem(), stack, event);
         }
 
+        if (registry.behavior().sounds().isPresent()) {
+            level.playSound(null, event.getPos(), registry.behavior().sounds().get().soundEvent(), SoundSource.BLOCKS, registry.behavior().sounds().get().volume(), registry.behavior().sounds().get().pitch());
+        }
+        if (registry.behavior().particles().isPresent()) {
+            spawnParticles(level, pos, registry.behavior().particles().get().particleType(), registry.behavior().particles().get().xv(), registry.behavior().particles().get().yv(), registry.behavior().particles().get().zv());
+        }
+
         int chanceToFail = registry.chanceToFail();
         if (chanceToFail > 0) {
             if (level.random.nextInt(chanceToFail) != 0) {
@@ -76,26 +84,19 @@ public class UseBehaviorImpl {
             case FEATURE -> placeFeature(level, pos, registry.behavior().place());
         }
 
-        if (registry.behavior().sounds().isPresent()) {
-            level.playSound(null, event.getPos(), registry.behavior().sounds().get().soundEvent(), SoundSource.BLOCKS, registry.behavior().sounds().get().volume(), registry.behavior().sounds().get().pitch());
-        }
-        if (registry.behavior().particles().isPresent()) {
-            spawnParticles(level, pos, registry.behavior().particles().get().particleType(), registry.behavior().particles().get().xv(), registry.behavior().particles().get().yv(), registry.behavior().particles().get().zv());
-        }
-
         event.setCancellationResult(InteractionResult.SUCCESS);
         event.setCanceled(true);
     }
 
     private static void placeBlock(Level level, BlockPos pos, ResourceLocation location, PlayerInteractEvent.RightClickBlock event) {
-        Block block = ForgeRegistries.BLOCKS.getValue(location);
+        Block block = ResourceKeyRegistryHelper.getBlock(location);
         if (block != null && block.canSurvive(level.getBlockState(pos), level, pos)) {
             level.setBlock(pos, block.defaultBlockState(), Block.UPDATE_ALL);
         }
     }
 
     private static void dropStack(Level level, BlockPos pos, Direction direction, Block block, ResourceLocation location) {
-        Item item = ForgeRegistries.ITEMS.getValue(location);
+        Item item = ResourceKeyRegistryHelper.getItem(location);
         if (item != null) {
             block.popResourceFromFace(level, pos, direction, new ItemStack(item));
         }
@@ -135,7 +136,7 @@ public class UseBehaviorImpl {
     }
 
     private static void spawnParticles(Level level, BlockPos pos, ResourceLocation location, double xVelocity, double yVelcoity, double zVelocity) {
-        ParticleType<?> particleType = ForgeRegistries.PARTICLE_TYPES.getValue(location);
+        ParticleType<?> particleType = ResourceKeyRegistryHelper.getParticleType(location);
         if (particleType instanceof SimpleParticleType simple) {
             RandomSource random = level.random;
             for (Direction direction : Direction.values()) {
