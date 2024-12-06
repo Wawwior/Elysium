@@ -10,7 +10,8 @@ public enum UseBehaviorTypeEnum {
     PLACE_ITSELF,
     DROP,
     DROP_ITSELF,
-    FEATURE;
+    FEATURE,
+    INSERT_STACK;
 
     public static final Codec<UseBehaviorTypeEnum> CODEC = Codec.STRING.comapFlatMap(
             s -> Arrays.stream(UseBehaviorTypeEnum.values()).filter(pos -> pos.name().equalsIgnoreCase(s)).findFirst().map(DataResult::success).orElse(DataResult.error(() -> "Invalid position: " + s)),

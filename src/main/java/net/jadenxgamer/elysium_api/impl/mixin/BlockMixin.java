@@ -8,18 +8,22 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 
-@Mixin(Block.class)
+@Mixin(value = Block.class, priority = 69420)
 public abstract class BlockMixin extends BlockBehaviour {
 
     public BlockMixin(Properties properties) {
         super(properties);
     }
+
+    @Unique
+    private final Block block = ((Block) (Object) this);
 
     @Inject(
             method = "getSoundType",

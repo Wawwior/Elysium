@@ -9,6 +9,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.feature.configurations.BlockStateConfiguration;
+import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider;
+import net.minecraft.world.level.levelgen.structure.templatesystem.BlockStateMatchTest;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Optional;
@@ -21,12 +25,16 @@ public record UseBehavior(HolderSet<Block> blocks, HolderSet<Item> itemCondition
             Behavior.CODEC.fieldOf("behaviors").forGetter(UseBehavior::behavior)
     ).apply(instance, UseBehavior::new));
 
-    public record Behavior(UseBehaviorTypeEnum type, ResourceLocation place, PosEnum pos, int posOffset,
-                           AfterUseItemEnum afterUseItem, boolean canReplace,
+    public record Behavior(UseBehaviorTypeEnum type, Optional<BlockState> block,
+                           Optional<ResourceLocation> item, int itemCount, Optional<ResourceLocation> feature,
+                           PosEnum pos, int posOffset, AfterUseItemEnum afterUseItem, boolean canReplace,
                            Optional<Sounds> sounds, Optional<Particles> particles) {
         public static final Codec<Behavior> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 UseBehaviorTypeEnum.CODEC.optionalFieldOf("type", UseBehaviorTypeEnum.PLACE).forGetter(Behavior::type),
-                ResourceLocation.CODEC.optionalFieldOf("place", new ResourceLocation("minecraft", "stone")).forGetter(Behavior::place),
+                BlockState.CODEC.optionalFieldOf("blockstate").forGetter(Behavior::block),
+                ResourceLocation.CODEC.optionalFieldOf("item").forGetter(Behavior::item),
+                Codec.INT.optionalFieldOf("item_count", 1).forGetter(Behavior::itemCount),
+                ResourceLocation.CODEC.optionalFieldOf("feature").forGetter(Behavior::feature),
                 PosEnum.CODEC.optionalFieldOf("pos", PosEnum.NOOP).forGetter(Behavior::pos),
                 Codec.INT.optionalFieldOf("pos_offset", 0).forGetter(Behavior::posOffset),
                 AfterUseItemEnum.CODEC.optionalFieldOf("after_use_item", AfterUseItemEnum.NOTHING).forGetter(Behavior::afterUseItem),

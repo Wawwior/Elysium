@@ -17,6 +17,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -77,29 +78,32 @@ public class UseBehaviorImpl {
         }
 
         switch (registry.behavior().type()) {
-            case PLACE -> placeBlock(level, pos, registry.behavior().place(), event);
-            case PLACE_ITSELF -> placeBlock(level, pos, ForgeRegistries.BLOCKS.getKey(state.getBlock()), event);
-            case DROP -> dropStack(level, pos, event.getFace(), state.getBlock(), registry.behavior().place());
-            case DROP_ITSELF -> dropStack(level, pos, event.getFace(), state.getBlock(), ForgeRegistries.BLOCKS.getKey(state.getBlock()));
-            case FEATURE -> placeFeature(level, pos, registry.behavior().place());
+            case PLACE -> placeBlock(level, pos, registry.behavior().block().get(), event);
+            case PLACE_ITSELF -> placeBlock(level, pos, state, event);
+            case DROP -> dropStack(level, pos, event.getFace(), state.getBlock(), registry.behavior().item().get(), registry.behavior().itemCount());
+            case DROP_ITSELF -> dropStack(level, pos, event.getFace(), state.getBlock(), ForgeRegistries.BLOCKS.getKey(state.getBlock()), registry.behavior().itemCount());
+            case FEATURE -> placeFeature(level, pos, registry.behavior().feature().get());
+            case INSERT_STACK -> insertStack(player, registry.behavior().item().get(), registry.behavior().itemCount());
         }
 
         event.setCancellationResult(InteractionResult.SUCCESS);
         event.setCanceled(true);
     }
 
-    private static void placeBlock(Level level, BlockPos pos, ResourceLocation location, PlayerInteractEvent.RightClickBlock event) {
-        Block block = ResourceKeyRegistryHelper.getBlock(location);
-        if (block != null && block.canSurvive(level.getBlockState(pos), level, pos)) {
-            level.setBlock(pos, block.defaultBlockState(), Block.UPDATE_ALL);
+    private static void placeBlock(Level level, BlockPos pos, BlockState state, PlayerInteractEvent.RightClickBlock event) {
+        if (state != null && state.getBlock().canSurvive(level.getBlockState(pos), level, pos)) {
+            level.setBlock(pos, state, Block.UPDATE_ALL);
         }
     }
 
-    private static void dropStack(Level level, BlockPos pos, Direction direction, Block block, ResourceLocation location) {
+    private static void dropStack(Level level, BlockPos pos, Direction direction, Block block, ResourceLocation location, int count) {
         Item item = ResourceKeyRegistryHelper.getItem(location);
-        if (item != null) {
-            block.popResourceFromFace(level, pos, direction, new ItemStack(item));
-        }
+        block.popResourceFromFace(level, pos, direction, new ItemStack(item, count));
+    }
+
+    private static void insertStack(Player player, ResourceLocation location, int count) {
+        Item item = ResourceKeyRegistryHelper.getItem(location);
+        player.addItem(new ItemStack(item, count));
     }
 
     private static void placeFeature(Level level, BlockPos pos, ResourceLocation location) {
