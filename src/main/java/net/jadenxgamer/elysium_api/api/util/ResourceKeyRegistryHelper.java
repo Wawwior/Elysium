@@ -19,10 +19,9 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class ResourceKeyRegistryHelper {
 
     /**
-     * Lets you easily obtain RegistryObjects by just calling a ResourceLocation
-     * it comes in very handy when doing mod compat
-     * @param id - the location and namespace of registry
-     * @return - returns the Registry if it exists. might return null if it doesn't
+     * Lets you easily retrieve Registries with ResourceLocation
+     * @param id - the namespaced id of the registry
+     * @return - returns the Registry if it exists. but might return null if it doesn't
      */
 
     public static Block getBlock(ResourceLocation id) {

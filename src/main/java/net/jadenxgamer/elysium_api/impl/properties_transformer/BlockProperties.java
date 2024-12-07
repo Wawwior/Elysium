@@ -1,4 +1,4 @@
-package net.jadenxgamer.elysium_api.impl.properties;
+package net.jadenxgamer.elysium_api.impl.properties_transformer;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;

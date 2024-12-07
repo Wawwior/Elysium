@@ -2,8 +2,7 @@ package net.jadenxgamer.elysium_api.impl.mixin;
 
 import net.jadenxgamer.elysium_api.Elysium;
 import net.jadenxgamer.elysium_api.impl.ElysiumRegistries;
-import net.jadenxgamer.elysium_api.impl.properties.BlockProperties;
-import net.jadenxgamer.elysium_api.impl.sound_transformer.SoundTransformer;
+import net.jadenxgamer.elysium_api.impl.properties_transformer.BlockProperties;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,7 +26,7 @@ public class BlockBehaviourMixin {
     )
     private void elysium$lightEmission(CallbackInfoReturnable<Integer> cir) {
         if (Elysium.registryAccess != null) {
-            Optional<BlockProperties> registry = Elysium.registryAccess.registryOrThrow(ElysiumRegistries.BLOCK_PROPERTIES).stream().filter(s -> s.blocks().contains(state.getBlockHolder())).findFirst();
+            Optional<BlockProperties> registry = Elysium.registryAccess.registryOrThrow(ElysiumRegistries.BLOCK_PROPERTIES_TRANSFORMER).stream().filter(s -> s.blocks().contains(state.getBlockHolder())).findFirst();
             if (registry.isEmpty() || registry.get().lightEmission().isEmpty()) {
                 return;
             }
