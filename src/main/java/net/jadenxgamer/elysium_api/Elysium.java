@@ -46,7 +46,7 @@ public class Elysium {
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    private void onServerAboutToStart(ServerAboutToStartEvent event) {
+    public void onServerAboutToStart(ServerAboutToStartEvent event) {
         registryAccess = event.getServer().registryAccess();
 
         ElysiumBiomeRegistry.registerNetherBiome(Biomes.BADLANDS, registryAccess);

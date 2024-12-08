@@ -17,7 +17,6 @@ import java.util.function.Supplier;
 
 @Mixin(BiomeSource.class)
 public class BiomeSourceMixin implements ElysiumBiomeSource {
-
     @Shadow
     @Mutable
     public Supplier<Set<Holder<Biome>>> possibleBiomes;
@@ -36,6 +35,5 @@ public class BiomeSourceMixin implements ElysiumBiomeSource {
         builder.addAll(biomes);
         this.possibleBiomes = Suppliers.memoize(builder::build);
         this.elysium$hasMergedPossibleBiomes = true;
-        Elysium.LOGGER.info("Successfully mapped new biomes to possibleBiomes");
     }
 }
