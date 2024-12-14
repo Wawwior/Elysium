@@ -14,6 +14,7 @@ import java.util.function.Function;
 import com.mojang.datafixers.util.Pair;
 
 import net.jadenxgamer.elysium_api.api.registry.BlockTemplate;
+import net.jadenxgamer.elysium_api.api.registry.GeneratorType;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
 import net.minecraft.world.item.BlockItem;
@@ -23,7 +24,6 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraft.world.level.block.state.properties.WoodType;
 import net.minecraftforge.client.model.generators.BlockStateProvider;
-import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.data.event.GatherDataEvent;
@@ -37,10 +37,20 @@ public class WoodSet {
 
     private Map<WoodBlockType, RegistryObject<Block>> blocks;
     private Map<WoodBlockType, RegistryObject<Item>> items;
+    private String woodName;
 
-    public WoodSet(Map<WoodBlockType, RegistryObject<Block>> blocks, Map<WoodBlockType, RegistryObject<Item>> items) {
+    private WoodSet(String woodName, Map<WoodBlockType, RegistryObject<Block>> blocks, Map<WoodBlockType, RegistryObject<Item>> items) {
+        this.woodName = woodName;
         this.blocks = blocks;
         this.items = items;
+    }
+
+    public String woodName() {
+        return woodName;
+    }
+
+    public Optional<String> getName(WoodBlockType type) {
+        return Optional.ofNullable(blocks.get(type)).map(r -> type.nameFor(woodName));
     }
 
     public List<RegistryObject<Block>> getBlockObjects() {
@@ -60,37 +70,13 @@ public class WoodSet {
     }
 
 
-    public static Builder overworldBuilder(String name, WoodType woodType) {
-        return Builder.forWood(name, woodType)
-               .addTypes(WoodBlockType.DEFAULT)
-               .addTypes(WoodBlockType.LOGS)
-               .noItem(
-                   WoodBlockType.SIGN,
-                   WoodBlockType.WALL_SIGN,
-                   WoodBlockType.HANGING_SIGN,
-                   WoodBlockType.WALL_HANGING_SIGN
-               );
-    }
-
-    public static Builder netherBuilder(String name, WoodType woodType) {
-        return Builder.forWood(name, woodType)
-               .addTypes(WoodBlockType.DEFAULT)
-               .addTypes(WoodBlockType.STEMS)
-               .noItem(
-                   WoodBlockType.SIGN,
-                   WoodBlockType.WALL_SIGN,
-                   WoodBlockType.HANGING_SIGN,
-                   WoodBlockType.WALL_HANGING_SIGN
-               );
-    }
-
-
     public static class Builder {
 
         private String name;
 
         private final List<WoodBlockType> types = new ArrayList<>();
         private final Map<WoodBlockType, BlockTemplate> templates = new HashMap<>();
+        private final Map<WoodBlockType, GeneratorType> generatorTypes = new HashMap<>();
         private final Map<WoodBlockType, Function<String, String>> nameModifiers = new HashMap<>();
         private final Map<WoodBlockType, Consumer<BlockBehaviour.Properties>> propertiesModifiers = new HashMap<>();
         private final Set<WoodBlockType> noItem = new HashSet<>();
@@ -99,7 +85,7 @@ public class WoodSet {
 
         private Consumer<Properties> propertiesModifier = p -> {};
 
-        public Builder(String name, WoodType type) {
+        private Builder(String name, WoodType type) {
             this.name = name;
             this.woodType = type;
         }
@@ -110,8 +96,18 @@ public class WoodSet {
 
         public Builder addTypes(List<Pair<WoodBlockType, BlockTemplate>> types) {
             types.forEach(type -> {
-                this.types.add(type.getFirst());
-                this.templates.put(type.getFirst(), type.getSecond());
+                WoodBlockType woodBlockType = type.getFirst();
+                woodBlockType.dependencies().forEach(dependency -> {
+                    if (!this.types.contains(dependency)) {
+                        this.types.add(dependency);
+                        this.templates.put(woodBlockType, BlockTemplate.EMPTY);
+                    }
+                });
+
+                if (!this.types.contains(woodBlockType)) {
+                    this.types.add(woodBlockType);
+                }
+                this.templates.put(woodBlockType, type.getSecond());
             });
             return this;
         }
@@ -147,22 +143,18 @@ public class WoodSet {
             return this;
         }
 
-        public WoodSet register(DeferredRegister<Block> blockRegistry, DeferredRegister<Item> itemRegistry) {
-
-            if (this.types.contains(WoodBlockType.STAIRS) && !this.types.contains(WoodBlockType.PLANKS)) {
-                throw new RuntimeException(new IllegalStateException("To register Stairs, Planks need to be registered too! Don't ask why..."));
-            }
+        public WoodSet register(String modid, DeferredRegister<Block> blockRegistry, DeferredRegister<Item> itemRegistry) {
 
             Map<WoodBlockType, RegistryObject<Block>> blocks = new LinkedHashMap<>();
             Map<WoodBlockType, RegistryObject<Item>> items = new LinkedHashMap<>();
-            WoodSet woodSet = new WoodSet(blocks, items);
+            WoodSet woodSet = new WoodSet(name, blocks, items);
             types.forEach(type -> {
                 String id = nameModifiers.getOrDefault(type, s -> s).apply(type.nameFor(name));
                 RegistryObject<Block> block = blockRegistry.register(id, () -> {
                     BlockBehaviour.Properties properties = templates.get(type).getProperties();
                     propertiesModifier.accept(properties);
                     propertiesModifiers.getOrDefault(type, t -> {}).accept(properties);
-                    return type.make(properties, woodType, woodSet.getBlock(WoodBlockType.PLANKS));
+                    return type.make(properties, woodType, woodSet);
                 });
 
                 if (!noItem.contains(type)) {
@@ -176,11 +168,16 @@ public class WoodSet {
                 PackOutput output = generator.getPackOutput();
                 ExistingFileHelper fileHelper = event.getExistingFileHelper();
 
-                generator.addProvider(event.includeClient(), new BlockStateProvider(output, /* TODO */ "", fileHelper) {
+                generator.addProvider(event.includeClient(), new BlockStateProvider(output, modid, fileHelper) {
                     @Override
                     protected void registerStatesAndModels() {
                         blocks.forEach((type, object) -> {
-                            type.modelGenerator(this, name).accept(object.get());
+
+                            GeneratorType modelType = generatorTypes.getOrDefault(type, GeneratorType.SIMPLE);
+
+                            if (modelType != GeneratorType.NONE) {
+                                type.modelGenerator(this, woodSet, modid, modelType).accept(object.get());
+                            }
                         });
                     }
                 });
