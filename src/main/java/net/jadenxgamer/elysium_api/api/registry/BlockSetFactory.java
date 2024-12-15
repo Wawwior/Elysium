@@ -13,8 +13,10 @@ import org.jetbrains.annotations.Contract;
 
 import com.mojang.datafixers.util.Pair;
 
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
@@ -39,7 +41,7 @@ public interface BlockSetFactory<T> {
         return new BlockSetFactory<T>() {
 
             private final String name = s;
-            private final T type = t;
+            private final T setType = t;
 
             private final List<BlockType<T>> types = new ArrayList<>();
             private final Map<BlockType<T>, BlockTemplate> templates = new HashMap<>();
@@ -116,6 +118,17 @@ public interface BlockSetFactory<T> {
 
                 };
 
+                types.forEach(type -> {
+                    String id = type.nameFor(name);
+                    RegistryObject<Block> blockObject = blockRegistry.register(id, () -> {
+                        Properties properties = mapper.apply(templates.get(type)).getProperties();
+                        return type.make(properties, setType, set);
+                    });
+                    blocks.put(type, blockObject);
+
+                    type.makeItem(blockObject).ifPresent(supp -> itemRegistry.register(id, supp));
+
+                });
 
                 return set;
             }

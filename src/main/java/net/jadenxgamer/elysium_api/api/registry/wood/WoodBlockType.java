@@ -25,6 +25,7 @@ import net.minecraftforge.client.model.generators.BlockStateProvider;
 /**
  * WoodBlockType
  */
+@Deprecated
 public interface WoodBlockType {
 
     public static WoodBlockType LOG = Builder.suffixed("_log", RotatedPillarBlock::new).withSimpleModelGen(p -> p::logBlock).build();

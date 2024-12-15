@@ -1,13 +1,16 @@
 package net.jadenxgamer.elysium_api.api.registry;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-import com.google.common.base.Optional;
 
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
+import net.minecraftforge.registries.RegistryObject;
 
 /**
  * BlockType
@@ -24,5 +27,7 @@ public interface BlockType<T> {
     List<BlockType<T>> dependencies();
 
     BlockType<T> mapName(Function<String, String> map);
+
+    Optional<Supplier<BlockItem>> makeItem(RegistryObject<Block> block);
 
 }

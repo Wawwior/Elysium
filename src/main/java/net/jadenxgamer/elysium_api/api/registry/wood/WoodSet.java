@@ -33,6 +33,7 @@ import net.minecraftforge.registries.RegistryObject;
 /**
  * WoodSet
  */
+@Deprecated
 public class WoodSet {
 
     private Map<WoodBlockType, RegistryObject<Block>> blocks;
